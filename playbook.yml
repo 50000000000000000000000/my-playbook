@@ -1,0 +1,26 @@
+# playbook.yml
+
+---
+- name: Provision Ubuntu and CentOS nodes
+  hosts: all
+  become: true
+  vars:
+    # ubuntu_node_ip: "ubuntu_node_ip_address"
+    ubuntu_node_ip: "172.29.208.64"
+    # centos_node_ip: "centos_node_ip_address"
+  tasks:
+    - name: Ensure SSH key is present
+      authorized_key:
+        user: "{{ ansible_user }}"
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+    - name: Ensure sudoers file is configured
+      lineinfile:
+        dest: /etc/sudoers
+        line: "{{ ansible_user }} ALL=(ALL) NOPASSWD: ALL"
+        validate: 'visudo -cf %s'
+    - name: Ensure Python is installed
+      raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+      when: ansible_distribution == 'Ubuntu'
+    - name: Ensure Python is installed
+      raw: test -e /usr/bin/python || (yum -y install python2)
+      when: ansible_distribution == 'CentOS' or ansible_distribution == 'RedHat'
